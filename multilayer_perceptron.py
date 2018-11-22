@@ -24,13 +24,9 @@ class MultilayerPerceptron():
 		self.weights_ = []
 		self.biases_ = []
 		for i in range(self.num_layers-1):
-			weights_init, biases_init = self._init_layer_coef(self.layer_sizes[i]+1,self.layer_sizes[i+1])
+			weights_init, biases_init = self._init_layer_coef(self.layer_sizes[i],self.layer_sizes[i+1])
 			self.weights_.append(weights_init)
 			self.biases_.append(biases_init)
-
-		for i in range(self.num_layers-2):
-			self.weights_[i] = np.append(self.weights_[i], np.array([[0] for layer in range(self.layer_sizes[i]+1)]),axis = 1)
-			print(self.weights_[i].shape)
 		#self.weights_ = [np.array([[0.87226208, 0.63434208,-0.65554529],[-0.550579,-0.2502144,-0.36035178]]), np.array([[0.91193366],[0.63712029],[0.618395]])]
 		print(self.weights_)
 
@@ -45,7 +41,6 @@ class MultilayerPerceptron():
 			bound *= 4
 
 		weights = self.random_state.uniform(bound, -bound, (fan_in, fan_out))
-		
 		biases =  np.zeros(fan_out)#self.random_state.uniform(bound, -bound, fan_out)
 		return weights, biases
 			
@@ -60,18 +55,17 @@ class MultilayerPerceptron():
 		Returns:
 
 		"""
-		print(activations)
+		
 		for t in range(1,self.num_layers):
-			for i in range(activations[t].shape[0]-1):
-				weighted_sum = np.dot(self.weights_[t-1][:,i],activations[t-1]) #+ self.biases_[t-1][i] #before was preactivation
+			for i in range(activations[t].shape[0]):
+				weighted_sum = np.dot(self.weights_[t-1][:,i],activations[t-1]) + self.biases_[t-1][i] #before was preactivation
 				activations[t][i] = self.activation.function(weighted_sum)
 
 ##### FORGOT biases
 ###### ISSUE IS THAT THE PREACTIVATION HAS AN EXTRA LAYER
 	def _backward_pass(self, activations, deltas):#activation_derivs, deltas):
 		for t in range(self.num_layers-2, -1, -1):
-			for i in range(len(self.weights_[t])):
-				print(t,i,self.weights_[t][i].shape, deltas[t+1].shape)											#Need to change for different loss functions
+			for i in range(len(self.weights_[t])):											#Need to change for different loss functions
 				deltas[t][i] = np.dot(self.weights_[t][i],deltas[t+1])*activations[t][i]*(1-activations[t][i])
 
 	def _backprop(self, activations, weight_grad, deltas, y): #return deltas for biases!!!!!!
@@ -103,13 +97,11 @@ class MultilayerPerceptron():
 			
 			for x, y in zip(X,ys):
 				count+=1
-				print("x",x)
+
 				activations = [np.zeros(size) for size in  self.layer_sizes]
-				activations[0] = x
-				activations = [np.append(layer,1) for layer in activations[:-1]] + [np.zeros(self.layer_sizes[-1])]
 				deltas = deepcopy(activations)
 				weight_grad = [np.full(layer.shape, np.nan) for layer in self.weights_] 				
-				
+				activations[0] = x
 
 
 				self._backprop(activations,weight_grad, deltas, y) # 0 -> regularization param
@@ -173,7 +165,7 @@ def main():
 	X = np.array([[1,1],[0,1],[1,0],[0,0]])
 	y = np.array([0,1,1,0])
 
-	mlp = MultilayerPerceptron(layer_sizes = [2,3,1], activation = Sigmoid(), solver = "SGD",
+	mlp = MultilayerPerceptron(layer_sizes = [2,3,2,4,4,1], activation = Sigmoid(), solver = "SGD",
 								learning_rate = 0.5, learning_rate_init = 0.5, max_iter = 10000,
 								shuffle = True, random_state = random_seed, tol = 0.01)
 	
