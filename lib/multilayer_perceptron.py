@@ -4,12 +4,11 @@ from copy import  deepcopy
 
 
 class MultilayerPerceptron():
-	def __init__(self, layer_sizes, activation,solver, learning_rate,
+	def __init__(self, layer_sizes, activation, learning_rate,
 			   learning_rate_init, max_iter,shuffle, random_state, tol, categorical):
 
 		self.layer_sizes = layer_sizes
 		self.activation = activation
-		self.solver = solver
 		self.learning_rate = learning_rate
 		self.learning_rate_init = learning_rate_init
 		self.max_iter = max_iter
@@ -27,7 +26,7 @@ class MultilayerPerceptron():
 		values of neurons in the prior layers during backpropagation. 
 		"""
 		self.weights_ = []
-
+		self.n_iter_ = 0
 		for i in range(self.num_layers-1):
 			weights_init = self._init_layer_coef(self.layer_sizes[i]+1,self.layer_sizes[i+1])
 			self.weights_.append(weights_init)
@@ -106,30 +105,37 @@ class MultilayerPerceptron():
 
 
 	def _fit(self, X, ys):
-		count = 0
+		assert X.shape[1] == self.layer_sizes[0], f"input vector size, {X.shape[1]}, does not match first layer size, {self.layer_sizes[0]}" 
+		assert ys.shape[1] == self.layer_sizes[-1], f"output vector size, {ys.shape[1]} does not match first layer size, {layer_sizes}"
+
 		for epoch in range(self.max_iter):
 			X,ys = unison_shuffled_copies(X, ys, self.random_state)
-			cost = 0
+			avg_cost = 0
+			count = 0
 			for x, y in zip(X,ys):
-				count+=1
-				#print("x",x)
+
 				activations = [np.zeros(size) for size in  self.layer_sizes]
 				activations[0] = x
 				activations = [np.append(layer,1) for layer in activations[:-1]] + [np.zeros(self.layer_sizes[-1])]
 				deltas = deepcopy(activations)
 				weight_grad = [np.full(layer.shape, np.nan) for layer in self.weights_]                 
-				
 
 
 				self._backprop(activations,weight_grad, deltas, y) # 0 -> regularization param
-
-
 				self.weights_ = [weights + self.learning_rate * grad for weights, grad in zip(self.weights_, weight_grad)]
-				loss = deltas[-1]
+				count+=1
+				if(count%10 == 0):
+					print(count , np.sum(avg_cost)/count)
+				avg_cost += 0.5*(y - activations[-1])**2
 
-				cost += 0.5*(y - activations[-1])**2
 
-			print("cost:",np.sum(cost/ys.shape[0]))
+			avg_cost /= ys.shape[0]
+
+			if np.sum(np.abs(avg_cost))<self.tol:
+				print(f"Converged with tolerance of {np.sum(np.abs(avg_cost))} ")
+				break
+
+			print("cost:",np.sum(avg_cost))
 
 
 				
