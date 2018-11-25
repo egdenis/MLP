@@ -111,11 +111,12 @@ class MultilayerPerceptron():
 		for epoch in range(self.max_iter):
 			X,ys = unison_shuffled_copies(X, ys, self.random_state)
 			avg_cost = 0
-			count = 0
 			for x, y in zip(X,ys):
 
 				activations = [np.zeros(size) for size in  self.layer_sizes]
 				activations[0] = x
+
+				#fix activation for bias at 1 so it does not effect downstream neurons
 				activations = [np.append(layer,1) for layer in activations[:-1]] + [np.zeros(self.layer_sizes[-1])]
 				deltas = deepcopy(activations)
 				weight_grad = [np.full(layer.shape, np.nan) for layer in self.weights_]                 
@@ -123,9 +124,6 @@ class MultilayerPerceptron():
 
 				self._backprop(activations,weight_grad, deltas, y) # 0 -> regularization param
 				self.weights_ = [weights + self.learning_rate * grad for weights, grad in zip(self.weights_, weight_grad)]
-				count+=1
-				if(count%10 == 0):
-					print(count , np.sum(avg_cost)/count)
 				avg_cost += 0.5*(y - activations[-1])**2
 
 
@@ -138,8 +136,16 @@ class MultilayerPerceptron():
 			print("cost:",np.sum(avg_cost))
 
 
-				
-
+	def _predict(self, X):
+		y_preds = np.empty((0,self.layer_sizes[-1]))
+		for x in X:
+			activations = [np.zeros(size) for size in  self.layer_sizes]
+			activations[0] = x
+			activations = [np.append(layer,1) for layer in activations[:-1]] + [np.zeros(self.layer_sizes[-1])]
+			self._forward_pass(activations)
+			y_pred = activations[-1] == np.amax(activations[-1] )
+			y_preds = np.vstack((y_preds, y_pred ))
+		return y_preds
 
 
 
